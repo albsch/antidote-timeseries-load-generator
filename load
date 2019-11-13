@@ -1,0 +1,55 @@
+#!/usr/bin/env escript
+
+main([]) ->
+    usage();
+
+main([Address, Port, Interval]) ->
+    code:add_pathz("lib"),
+
+    io:format("Starting load generation of 50KB timestamped packages every ~s ms~n", [Interval]),
+    io:format("Target: ~s:~s~n", [Address, Port]),
+
+    % open socket
+    {ok, Pid} = antidotec_pb_socket:start(Address, Port),
+    io:format("Opened socket to Antidote~n"),
+
+    % continuous insert
+    ok = continuous_insert(0, Pid, Interval);
+
+main(_) ->
+    usage().
+
+
+continuous_insert(Accumulated, Pid, Interval) ->
+    Bucket = <<"load">>,
+    Timestamp = erlang:system_time(microsecond),
+    % 50KB
+    Payload = erlang:system_info(procs),
+    io:format("Time: ~p Value: ~p KB Accumulated: ~p KB ~n", [Timestamp, erlang:size(Payload), Accumulated]),
+
+    Key = term_to_binary(Payload),
+    Bound_object = {Key, antidote_crdt_register_lww, Bucket},
+
+    {ok, TxId} = antidotec_pb:start_transaction(Pid, ignore),
+    ok = antidotec_pb:update_objects(Pid, [{Bound_object, assign, Payload}], TxId),
+    {ok, _} = antidotec_pb:commit_transaction(Pid, TxId),
+
+    % again
+    timer:sleep(Interval),
+    continuous_insert(Accumulated + erlang:size(Payload), Pid, Interval).
+
+
+usage() ->
+    io:format("NAME~n"),
+    io:format("    load - continuous time series data generator~n~n"),
+    io:format("SYNOPSIS~n"),
+    io:format("    load ADDRESS PORT INTERVAL~n~n"),
+    io:format("DESCRIPTION~n"),
+    io:format("    Continously sends update requests to target Antidote instance.~n~n"),
+    io:format("    A requests consists of the current timestamp as the key and some dummy data (about 50KB) as the value.~n~n"),
+    io:format("    Stops if any unexpected error occurs.~n~n"),
+    io:format("    ADDRESS PORT: address and port to reach the target Antidote instance on~n~n"),
+    io:format("    INTERVAL: interval in milliseconds to send timestamped data to target~n~n"),
+    io:format("EXAMPLES~n"),
+    io:format("    load localhost 8087 1000~n"),
+    io:format("        Generate a time series data point every second on the same machine the script is running on~n").

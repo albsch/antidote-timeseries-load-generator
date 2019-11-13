@@ -1,0 +1,12 @@
+{application,antidotec_pb,
+             [{description,"Antidote Erlang Client Library"},
+              {vsn,"0.2.9"},
+              {registered,[]},
+              {applications,[kernel,stdlib,antidote_pb_codec]},
+              {licenses,["Apache 2.0"]},
+              {links,[{"Github",
+                       "https://github.com/AntidoteDB/antidote-erlang-client"}]},
+              {env,[]},
+              {modules,[antidotec_counter,antidotec_datatype,antidotec_pb,
+                        antidotec_pb_management,antidotec_pb_socket,
+                        antidotec_reg,antidotec_set]}]}.
