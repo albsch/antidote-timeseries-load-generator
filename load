@@ -10,11 +10,11 @@ main([Address, Port, Interval]) ->
     io:format("Target: ~s:~s~n", [Address, Port]),
 
     % open socket
-    {ok, Pid} = antidotec_pb_socket:start(Address, Port),
+    {ok, Pid} = antidotec_pb_socket:start(Address, list_to_integer(Port)),
     io:format("Opened socket to Antidote~n"),
 
     % continuous insert
-    ok = continuous_insert(0, Pid, Interval);
+    ok = continuous_insert(0, Pid, list_to_integer(Interval));
 
 main(_) ->
     usage().
